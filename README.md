@@ -1,5 +1,7 @@
 # Focus Maid 专注女仆
 
+![image](https://github.com/user-attachments/assets/5bbce279-19e8-419d-8560-6cae47033995)
+
 [![built with Codeium](https://codeium.com/badges/main)](https://codeium.com)
 
 Focus Maid 是一款简洁而可爱的专注力辅助工具，它能帮助您在工作或学习时保持专注。通过可爱的女仆形象和贴心的功能设计，让您的专注时间更加愉悦和高效。
