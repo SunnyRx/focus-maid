@@ -1,7 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.Media;
 using System.IO;
+using System.Windows.Resources;
 
 namespace FocusMaid
 {
@@ -10,6 +9,7 @@ namespace FocusMaid
         private static SoundManager? _instance;
         private readonly Dictionary<string, SoundPlayer> _soundPlayers;
         private const string SOUND_DIRECTORY = "Sounds";
+        private const string DEFAULT_SOUND = @"C:\Windows\Media\Windows Notify.wav";
 
         // 定义声音类型
         public static class SoundType
@@ -38,18 +38,9 @@ namespace FocusMaid
         {
             try
             {
-                string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-                string soundDirectory = Path.Combine(baseDirectory, SOUND_DIRECTORY);
-
-                // 确保声音目录存在
-                if (!Directory.Exists(soundDirectory))
-                {
-                    Directory.CreateDirectory(soundDirectory);
-                }
-
                 // 加载所有声音文件
-                LoadSound(SoundType.FocusComplete, Path.Combine(soundDirectory, "focus_complete.wav"));
-                LoadSound(SoundType.FocusStart, Path.Combine(soundDirectory, "focus_start.wav"));
+                LoadSound(SoundType.FocusComplete, "focus_complete.wav");
+                LoadSound(SoundType.FocusStart, "focus_start.wav");
                 // 可以在这里添加更多声音文件的加载
             }
             catch (Exception ex)
@@ -59,28 +50,47 @@ namespace FocusMaid
             }
         }
 
-        private void LoadSound(string soundType, string filePath)
+        private void LoadSound(string soundType, string fileName)
         {
             try
             {
-                if (File.Exists(filePath))
+                // 首先尝试从外部 Sounds 文件夹加载
+                string externalPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Sounds", fileName);
+                if (File.Exists(externalPath))
                 {
-                    var player = new SoundPlayer(filePath);
-                    player.LoadAsync(); // 异步加载声音文件
-                    _soundPlayers[soundType] = player;
-                }
-                else
-                {
-                    // 如果找不到自定义声音文件，使用系统默认声音
-                    var player = new SoundPlayer();
-                    player.SoundLocation = @"C:\Windows\Media\Windows Notify.wav";
+                    var player = new SoundPlayer(externalPath);
                     player.LoadAsync();
                     _soundPlayers[soundType] = player;
+                    return;
                 }
+
+                // 尝试从内嵌资源加载
+                try
+                {
+                    Uri resourceUri = new Uri($"pack://application:,,,/FocusMaid;component/Resources/{fileName}", UriKind.Absolute);
+                    StreamResourceInfo resourceStream = System.Windows.Application.GetResourceStream(resourceUri);
+                    if (resourceStream != null)
+                    {
+                        var player = new SoundPlayer(resourceStream.Stream);
+                        player.LoadAsync();
+                        _soundPlayers[soundType] = player;
+                        return;
+                    }
+                }
+                catch
+                {
+                    // 如果资源加载失败，继续尝试下一个选项
+                }
+
+                // 如果都找不到，使用系统默认声音
+                var defaultPlayer = new SoundPlayer();
+                defaultPlayer.SoundLocation = DEFAULT_SOUND;
+                defaultPlayer.LoadAsync();
+                _soundPlayers[soundType] = defaultPlayer;
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"加载声音文件失败：{filePath}\n错误：{ex.Message}", "声音加载错误",
+                System.Windows.MessageBox.Show($"加载声音文件失败：{fileName}\n错误：{ex.Message}", "声音加载错误",
                     System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
             }
         }
